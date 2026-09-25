@@ -16,6 +16,11 @@ jobs:
         run: cmake -S . -B build
       - name: Build
         run: cmake --build build --config Release
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-windows
+          path: build/Release/pulse_cli.exe
 
   linux:
     runs-on: ubuntu-latest
@@ -25,6 +30,11 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-linux
+          path: build/pulse_cli
 
   macos:
     runs-on: macos-latest
@@ -34,9 +44,16 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-macos
+          path: build/pulse_cli
 
   android:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
@@ -44,6 +61,14 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Install Android command line tools
+        run: |
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          curl -sSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
       - name: Accept SDK licenses
         run: yes | sdkmanager --licenses
       - name: Install SDK packages
@@ -51,6 +76,11 @@ jobs:
       - name: Build debug APK
         working-directory: platform/android
         run: gradle assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-android
+          path: platform/android/app/build/outputs/apk/debug/app-debug.apk
 
   ios:
     runs-on: macos-latest
@@ -64,3 +94,8 @@ jobs:
             -DPULSE_IOS_PLATFORM=SIMULATORARM64
       - name: Build
         run: cmake --build build-ios --config Release
+      - name: Upload library
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-ios
+          path: build-ios/Release-iphonesimulator/libpulse_ios.a
